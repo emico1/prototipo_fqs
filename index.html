@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Familias que Suman — Prototipo de vistas</title>
+<title>Familias que Suman</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@300..600,0..1&display=swap" rel="stylesheet">
@@ -154,11 +154,6 @@ h3.section-title{font-family:var(--headline);font-size:15px;font-weight:700;marg
   <div class="notes">
     <h2>Familias que Suman</h2>
     <p style="margin:0 0 10px">Prototipo funcional de dos casos de uso completos, construido a partir del mockup en Stitch y de la retroalimentación del socio formador en la sesión de semana 2.</p>
-    <h2>Leyenda de navegación</h2>
-    <div class="legend-item"><span class="legend-dot" style="background:var(--primary)"></span>Elemento con borde/relleno azul = navega a otra pantalla (haz clic)</div>
-    <div class="legend-item"><span class="legend-dot" style="background:var(--tertiary)"></span>Botón "Proponer" = acceso prioritario, pedido por el socio formador</div>
-    <div class="legend-item"><span class="legend-dot" style="background:var(--error)"></span>Rojo = estado de error</div>
-    <h2>Ajustes pedidos por el socio formador (semana 2)</h2>
     <ul>
       <li>Cuenta se crea individual por defecto; miembros se agregan desde el perfil</li>
       <li>Registro pide fecha de nacimiento, no edad</li>
@@ -247,7 +242,7 @@ const FLOW = [
   {uc:'Caso de uso A', sub:'Descubrir e inscribirse a una actividad · RF-01 a RF-08, RF-17', items:[
     ['a1','Bienvenida','—'],['a2','Crear cuenta','RF-19'],['a3','Elegir ciudad','RF-02'],
     ['a4','Explorar','RF-01/09'],['aorg','Ficha de asociación','RF-03'],['a5','Ficha de actividad','RF-04/05/08'],
-    ['a6','Inscripción','RF-06'],['a7','Confirmación','RF-07'],['a7e','⚠ Sin lugares (error)','RF-05']
+    ['a6','Inscripción','RF-06'],['a7','Confirmación','RF-07'],['a7e','Sin lugares (error)','RF-05']
   ]},
   {uc:'Caso de uso B', sub:'Mi perfil, comunidad y participación · RF-11 a RF-20', items:[
     ['b1','Mi perfil','RF-11/14'],['b9','Agregar miembro','RF-11'],['b10','Editar/eliminar miembro','RF-11'],['b2','Historial','RF-11'],['b3','Compartir testimonio','RF-12'],
@@ -439,8 +434,18 @@ S.a4 = (ds)=>{
   ${bottomnav('a4')}`;
 };
 
-S.aorg = ()=>`
-${topbar('Ficha de asociación','a4')}
+function toggleOrgFavorite(name, cat){
+  const idx = D.favorites.findIndex(f=>f.name===name);
+  if(idx>-1) D.favorites.splice(idx,1);
+  else D.favorites.push({name, cat, notif:true});
+  render();
+  flash(idx>-1 ? name+' quitada de favoritos' : name+' agregada a favoritos');
+}
+
+S.aorg = ()=>{
+  const isFav = D.favorites.some(f=>f.name==='Reforestación NL');
+  return `
+${topbar('Ficha de asociación','a4',`<button class="iconbtn nav-el" title="${isFav?'Quitar de favoritos':'Guardar en favoritos'}" onclick="toggleOrgFavorite('Reforestación NL','Medio ambiente')" style="background:${isFav?'var(--primary-container)':'var(--surface-container)'}"><span class="material-symbols-outlined" style="color:${isFav?'var(--primary)':'var(--on-surface-variant)'}">${isFav?'favorite':'favorite_border'}</span></button>`)}
 <div class="pill-photo" style="margin:0 16px;height:130px"><span class="material-symbols-outlined" style="font-size:36px">park</span></div>
 <div class="px" style="margin-top:14px">
   <h2 style="font-family:var(--headline);margin:0 0 2px">Reforestación NL</h2>
@@ -465,6 +470,7 @@ ${actCard(D.activities[1])}
 <div style="padding:14px 16px 90px">
   <button class="btn primary nav-el" title="Va a: Ficha de actividad" onclick="nav('a5')">Ver actividad y apoyar</button>
 </div>`;
+};
 
 S.a5 = ()=>{
   const a = D.activities[1]; // reforestación, 2 de 20 lugares — usada para el flujo de error de cupo
@@ -584,7 +590,7 @@ ${D.companions.map((c,i)=>`<div class="checkrow" style="border:none;background:v
 <div class="px"><span class="link-el nav-el" title="Va a: Agregar miembro" onclick="nav('b9')"><span class="material-symbols-outlined" style="font-size:17px">person_add</span>Agregar miembro de mi familia</span></div>
 
 <h3 class="section-title">Insignias</h3>
-<div class="chiprow"><span class="chip active">🌱 Primer voluntariado</span><span class="chip active">🍽️ 3 apoyos a Alimentación</span><span class="chip">🏅 5 actividades</span></div>
+<div class="chiprow"><span class="chip active">Primer voluntariado</span><span class="chip active">3 apoyos a Alimentación</span><span class="chip">5 actividades</span></div>
 
 <h3 class="section-title">Fotos de mis experiencias</h3>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 16px">
