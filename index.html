@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Familias que Suman — Prototipo de vistas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@300..600,0..1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#2563eb; --on-primary:#ffffff; --primary-container:#dbeafe; --on-primary-container:#1e3a8a;
+  --secondary:#4a6549; --secondary-container:#ccebc7; --on-secondary-container:#2f4a30;
+  --tertiary:#8d4f11; --tertiary-container:#ffe3c7; --on-tertiary-container:#5c3400;
+  --error:#ba1a1a; --error-container:#ffdad6; --on-error-container:#93000a;
+  --surface:#fdf9f6; --surface-dim:#efe9e5; --surface-container-low:#f7f3f0; --surface-container:#f1edea; --surface-container-high:#ebe7e5;
+  --on-surface:#1c1b1a; --on-surface-variant:#56423e; --outline:#89726d; --outline-variant:#ddc0ba;
+  --headline:'Plus Jakarta Sans',sans-serif; --body:'Be Vietnam Pro',sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:#e8e2dc;font-family:var(--body);color:var(--on-surface);}
+.app-shell{display:grid;grid-template-columns:280px 1fr 300px;min-height:100vh;}
+@media (max-width:1100px){.app-shell{grid-template-columns:1fr;}.side,.notes{display:none;}}
+
+.side{background:#1c1b1a;color:#f4f0ed;padding:20px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.side h1{font-family:var(--headline);font-size:15px;font-weight:800;margin:0 0 2px;}
+.side .sub{font-size:11px;color:#b7ada7;margin-bottom:18px;}
+.uc-block{margin-bottom:18px;}
+.uc-title{font-family:var(--headline);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#93c5fd;margin:0 0 8px;padding-left:4px;}
+.uc-title small{display:block;color:#8a8781;text-transform:none;font-weight:400;letter-spacing:0;margin-top:2px;font-size:10.5px;}
+.screen-btn{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;color:#e6e1dc;font-family:var(--body);font-size:12.5px;padding:7px 8px;border-radius:8px;cursor:pointer;line-height:1.3;}
+.screen-btn:hover{background:#2c2b29;}
+.screen-btn.active{background:var(--primary);color:#fff;font-weight:600;}
+.screen-btn .num{flex:none;width:18px;height:18px;border-radius:5px;background:#3a3937;color:#c9c4be;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.screen-btn.active .num{background:rgba(255,255,255,.25);color:#fff;}
+.screen-btn .rf{margin-left:auto;font-size:9.5px;color:#8a8781;flex:none;}
+.screen-btn.active .rf{color:#dbeafe;}
+
+.center{display:flex;flex-direction:column;align-items:center;padding:28px 20px 60px;}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#1c1b1a;color:#fff;padding:9px 16px;border-radius:99px;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .18s, transform .18s;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(4px);}
+.toast .material-symbols-outlined{font-size:16px;color:#93c5fd;}
+.state-bar{display:flex;gap:6px;margin-bottom:14px;background:#fff;padding:5px;border-radius:99px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.state-chip{border:none;background:none;padding:6px 13px;border-radius:99px;font-size:11.5px;font-weight:600;font-family:var(--body);color:var(--on-surface-variant);cursor:pointer;}
+.state-chip.active{background:var(--primary);color:#fff;}
+.phone{width:375px;height:812px;background:var(--surface);border-radius:44px;border:10px solid #111;box-shadow:0 30px 60px rgba(0,0,0,.35);overflow:hidden;position:relative;}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:26px;background:#111;border-radius:0 0 16px 16px;z-index:30;}
+.statusbar{height:44px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 6px;font-size:13px;font-weight:700;font-family:var(--headline);}
+.screen-scroll{height:calc(812px - 44px);overflow:hidden;display:flex;flex-direction:column;}
+.page-content{flex:1;overflow-y:auto;padding-bottom:8px;}
+.page-content::-webkit-scrollbar{width:0;}
+.caption{margin-top:14px;font-size:12px;color:#7a746e;text-align:center;max-width:375px;}
+.caption b{color:var(--on-surface);}
+
+.notes{padding:24px 18px;font-size:12.5px;color:var(--on-surface-variant);position:sticky;top:0;height:100vh;overflow-y:auto;}
+.notes h2{font-family:var(--headline);font-size:13px;color:var(--on-surface);margin:22px 0 8px;}
+.notes h2:first-of-type{margin-top:0;}
+.notes ul{margin:0;padding-left:16px;}
+.notes li{margin-bottom:6px;line-height:1.4;}
+.legend-item{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex:none;}
+.tag{display:inline-block;background:var(--surface-container-high);border-radius:6px;padding:1px 6px;font-size:10.5px;font-weight:700;color:var(--on-surface-variant);}
+
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle;}
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px 14px;background:var(--surface);position:sticky;top:0;z-index:5;}
+.topbar h2{font-family:var(--headline);font-size:18px;font-weight:700;margin:0;flex:1;}
+.iconbtn{width:36px;height:36px;border-radius:50%;border:none;background:var(--surface-container);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+.iconbtn.nav-el{outline:2px solid transparent;}
+.px{padding-left:16px;padding-right:16px;}
+h3.section-title{font-family:var(--headline);font-size:15px;font-weight:700;margin:18px 16px 10px;}
+.tabs{display:flex;gap:6px;padding:0 16px 4px;}
+.tab{border:none;background:var(--surface-container);color:var(--on-surface-variant);font-family:var(--body);font-weight:600;font-size:12.5px;padding:8px 14px;border-radius:99px;cursor:pointer;}
+.tab.active{background:var(--primary);color:#fff;}
+.chiprow{display:flex;gap:8px;padding:10px 16px 4px;overflow-x:auto;}
+.chip{flex:none;background:var(--surface-container);border:1px solid var(--outline-variant);border-radius:99px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--on-surface-variant);white-space:nowrap;}
+.chip.active{background:var(--primary-container);border-color:var(--primary);color:var(--on-primary-container);}
+.progressbar{height:8px;background:var(--surface-container-high);border-radius:99px;overflow:hidden;margin:8px 0 4px;}
+.progressbar>span{display:block;height:100%;background:var(--secondary);border-radius:99px;}
+.card{background:#fff;border:1px solid var(--surface-container-high);border-radius:16px;margin:10px 16px;overflow:hidden;box-shadow:0 1px 2px rgba(28,27,26,.06);}
+.card .thumb{height:110px;background:linear-gradient(135deg,var(--primary-container),var(--secondary-container));display:flex;align-items:center;justify-content:center;}
+.card .thumb .material-symbols-outlined{font-size:36px;color:var(--primary);opacity:.55;}
+.card-body{padding:12px 14px 14px;}
+.card-title{font-family:var(--headline);font-weight:700;font-size:14.5px;margin:0 0 3px;}
+.card-sub{font-size:12px;color:var(--on-surface-variant);margin:0 0 8px;}
+.meta-row{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--on-surface-variant);margin-bottom:3px;}
+.meta-row .material-symbols-outlined{font-size:15px;color:var(--outline);}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;}
+.badge.ok{background:var(--secondary-container);color:var(--on-secondary-container);}
+.badge.low{background:var(--tertiary-container);color:var(--on-tertiary-container);}
+.badge.full{background:var(--error-container);color:var(--on-error-container);}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--body);font-weight:700;font-size:14px;border-radius:12px;border:none;cursor:pointer;padding:13px;width:100%;}
+.btn.primary{background:var(--primary);color:#fff;}
+.btn.secondary{background:var(--primary-container);color:var(--on-primary-container);}
+.btn.outline{background:#fff;color:var(--on-surface);border:1.5px solid var(--outline-variant);}
+.btn.error{background:var(--error);color:#fff;}
+.btn.sm{padding:9px;font-size:12.5px;width:auto;}
+.field{margin:0 16px 14px;}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--on-surface-variant);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--outline-variant);border-radius:10px;padding:11px 12px;font-family:var(--body);font-size:14px;background:#fff;color:var(--on-surface);}
+.field input:focus,.field textarea:focus{outline:2px solid var(--primary);border-color:var(--primary);}
+.field.err input{border-color:var(--error);background:var(--error-container);}
+.field .errmsg{display:none;color:var(--error);font-size:11.5px;font-weight:600;margin-top:5px;align-items:center;gap:4px;}
+.field.err .errmsg{display:flex;}
+.checkrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--outline-variant);border-radius:12px;margin:0 16px 10px;}
+.checkrow input{width:19px;height:19px;flex:none;}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--primary-container);color:var(--on-primary-container);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none;}
+.bottomnav{flex:none;display:flex;background:#fff;border-top:1px solid var(--surface-container-high);padding:8px 4px 26px;}
+.navitem{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;font-family:var(--body);font-size:10px;font-weight:600;color:var(--on-surface-variant);cursor:pointer;position:relative;}
+.navitem.active{color:var(--primary);}
+.navitem .material-symbols-outlined{font-size:22px;}
+.navitem .dot{position:absolute;top:-2px;right:26%;width:7px;height:7px;border-radius:50%;background:var(--error);}
+.hero{background:linear-gradient(160deg,var(--primary) 0%,#1d4ed8 100%);color:#fff;padding:26px 20px 30px;border-radius:0 0 26px 26px;}
+.hero h1{font-family:var(--headline);font-size:23px;font-weight:800;margin:6px 0 4px;line-height:1.2;}
+.hero p{font-size:13px;opacity:.9;margin:0;}
+.fab{position:sticky;bottom:96px;margin-left:auto;margin-right:16px;width:fit-content;display:flex;align-items:center;gap:8px;background:var(--tertiary);color:#fff;font-family:var(--body);font-weight:700;font-size:13px;padding:13px 18px;border-radius:99px;border:none;box-shadow:0 8px 18px rgba(141,79,17,.35);cursor:pointer;z-index:6;}
+.propose-card{margin:14px 16px;background:linear-gradient(120deg,var(--tertiary-container),#fff2e2);border:1.5px solid #e9c496;border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.propose-card .material-symbols-outlined{font-size:26px;color:var(--tertiary);}
+.propose-card b{font-family:var(--headline);font-size:13.5px;}
+.propose-card span{display:block;font-size:11.5px;color:var(--on-surface-variant);}
+.skel{background:linear-gradient(90deg,#eee 25%,#f6f4f2 37%,#eee 63%);background-size:400% 100%;animation:sh 1.3s infinite;border-radius:8px;}
+@keyframes sh{0%{background-position:100% 0}100%{background-position:0 0}}
+.empty-wrap,.error-wrap{padding:50px 30px;text-align:center;}
+.empty-wrap .material-symbols-outlined,.error-wrap .material-symbols-outlined{font-size:48px;color:var(--outline);}
+.error-wrap .material-symbols-outlined{color:var(--error);}
+.empty-wrap h4,.error-wrap h4{font-family:var(--headline);font-size:16px;margin:14px 0 6px;}
+.empty-wrap p,.error-wrap p{font-size:12.5px;color:var(--on-surface-variant);line-height:1.5;margin:0 0 18px;}
+.pill-photo{width:100%;height:130px;border-radius:14px;background:linear-gradient(135deg,#ffe3c7,#dbeafe);display:flex;align-items:center;justify-content:center;color:var(--outline);}
+.divider{height:1px;background:var(--surface-container-high);margin:14px 16px;}
+.notif-row{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--surface-container-low);}
+.notif-row .ic{width:34px;height:34px;border-radius:50%;background:var(--surface-container);display:flex;align-items:center;justify-content:center;flex:none;}
+.notif-row .ic .material-symbols-outlined{font-size:18px;color:var(--primary);}
+.small-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--outline);}
+.nav-el{cursor:pointer;position:relative;}
+.nav-el::after{content:'';}
+.link-el{color:var(--primary);font-weight:700;font-size:12.5px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"><span class="material-symbols-outlined">arrow_forward</span><span id="toastTxt"></span></div>
+<div class="app-shell">
+
+  <div class="side" id="sidebar"></div>
+
+  <div class="center">
+    <div class="state-bar" id="stateBar" style="display:none"></div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><span class="material-symbols-outlined" style="font-size:16px">signal_cellular_alt</span><span class="material-symbols-outlined" style="font-size:16px">wifi</span><span class="material-symbols-outlined" style="font-size:16px">battery_full</span></span></div>
+      <div class="screen-scroll" id="screenRoot"></div>
+    </div>
+    <div class="caption" id="caption"></div>
+  </div>
+
+  <div class="notes">
+    <h2>Familias que Suman</h2>
+    <p style="margin:0 0 10px">Prototipo funcional de dos casos de uso completos, construido a partir del mockup en Stitch y de la retroalimentación del socio formador en la sesión de semana 2.</p>
+    <h2>Leyenda de navegación</h2>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--primary)"></span>Elemento con borde/relleno azul = navega a otra pantalla (haz clic)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--tertiary)"></span>Botón "Proponer" = acceso prioritario, pedido por el socio formador</div>
+    <div class="legend-item"><span class="legend-dot" style="background:var(--error)"></span>Rojo = estado de error</div>
+    <h2>Ajustes pedidos por el socio formador (semana 2)</h2>
+    <ul>
+      <li>Cuenta se crea individual por defecto; miembros se agregan desde el perfil</li>
+      <li>Registro pide fecha de nacimiento, no edad</li>
+      <li>Explorar separado en Actividades / Campañas / Proyectos</li>
+      <li>Fotos de experiencias visibles en el perfil</li>
+      <li>"Proponer iniciativa" con más prioridad visual</li>
+      <li>Acompañantes guardados como contactos reutilizables</li>
+      <li>Correo obligatorio al agregar un acompañante nuevo</li>
+      <li>Acceso al sitio web completo (familiasquesuman.com)</li>
+    </ul>
+    <h2>Requerimientos nuevos cubiertos</h2>
+    <p style="margin:0">RF-16 notificaciones · RF-17 proponer iniciativa · RF-18 reportar mala experiencia · RF-19 username y preferencias · RF-20 favoritos</p>
+  </div>
+</div>
+
+<script>
+const D = {
+  user:{ name:'Daniela Reyes', initials:'DR', city:'Monterrey', username:'@dani_reyes' },
+  companions:[
+    {name:'Mateo Reyes', rel:'Hijo/a', dob:'14/03/2017', age:8, email:'mateo.reyes@ejemplo.com'},
+    {name:'Sofía Reyes', rel:'Pareja', dob:'02/11/1990', age:35, email:'sofia.reyes@ejemplo.com'}
+  ],
+  activities:[
+    {id:'despensas', name:'Clasificación de despensas', org:'Banco de Alimentos de Monterrey', cat:'Alimentación', date:'Sáb 12 sep · 9:00–12:00 hrs', place:'Col. Obispado, Monterrey', kids:'Apta desde 8 años', spots:6, total:25},
+    {id:'reforestacion', name:'Reforestación Parque Fundidora', org:'Reforestación NL', cat:'Medio ambiente', date:'Dom 20 sep · 8:00–11:00 hrs', place:'Parque Fundidora, Monterrey', kids:'Apta para toda la familia', spots:2, total:20},
+    {id:'lectura', name:'Taller de lectura para niños', org:'Fundación Comparte A.C.', cat:'Educación', date:'Sáb 19 sep · 10:00–12:00 hrs', place:'Biblioteca Independencia', kids:'Apta para niños', spots:0, total:15},
+    {id:'adultos', name:'Acompañamiento a adultos mayores', org:'Casa Hogar Luz y Esperanza', cat:'Adultos mayores', date:'Vie 18 sep · 16:00–18:00 hrs', place:'Col. Mitras, Monterrey', kids:'No recomendada para menores de 12', spots:8, total:10}
+  ],
+  campaigns:[
+    {name:'Campaña de invierno: cobijas y ropa abrigadora', org:'Familias que Suman', progress:340, goal:500, until:'Recolección hasta el 30 nov'},
+    {name:'Útiles escolares para Comparte A.C.', org:'Fundación Comparte A.C.', progress:120, goal:200, until:'Cierra el 15 sep'}
+  ],
+  projects:[
+    {name:'Huerto comunitario Independencia', org:'Reforestación NL', status:'En curso · fase 2 de 3'},
+    {name:'Comedor infantil Mitras', org:'Casa Hogar Luz y Esperanza', status:'Buscando voluntariado fijo'}
+  ],
+  history:[
+    {name:'Clasificación de despensas', org:'Banco de Alimentos de Monterrey', date:'15 ago 2026', testimonial:false},
+    {name:'Reforestación Parque Fundidora', org:'Reforestación NL', date:'21 jun 2026', testimonial:true}
+  ],
+  favorites:[
+    {name:'Banco de Alimentos de Monterrey', cat:'Alimentación', notif:true},
+    {name:'Reforestación NL', cat:'Medio ambiente', notif:false}
+  ],
+  notifications:[
+    {kind:'Alerta', icon:'notifications', text:'Nueva actividad cerca de ti: Reforestación Parque Fundidora, dom 20 sep.', time:'Hace 2 h'},
+    {kind:'Recordatorio', icon:'schedule', text:'Tu actividad "Acompañamiento a adultos mayores" es mañana a las 16:00 hrs.', time:'Hace 5 h'},
+    {kind:'Sugerencia', icon:'auto_awesome', text:'Como te interesó Educación, prueba: Taller de lectura para niños.', time:'Ayer'}
+  ],
+  reportReasons:['Información desactualizada','Falta de profesionalismo del personal','Posible fraude en donativos','Otro']
+};
+
+let cur = 'a1';
+let dataState = 'data';
+let exploreTab = 'actividades';
+function setExploreTab(t){ exploreTab=t; render(); }
+let activeCategory = 'Todas';
+function setCategory(cat){ activeCategory=cat; render(); }
+let ucFilterCat = null; // for empty-state demo
+let newCompanion = {show:false, email:''};
+let newFamilyMember = {email:''};
+let editingIndex = null;
+let confirmDeleteMember = false;
+function editCompanion(i){ editingIndex=i; confirmDeleteMember=false; nav('b10'); }
+let regFamily = false;
+
+const FLOW = [
+  {uc:'Caso de uso A', sub:'Descubrir e inscribirse a una actividad · RF-01 a RF-08, RF-17', items:[
+    ['a1','Bienvenida','—'],['a2','Crear cuenta','RF-19'],['a3','Elegir ciudad','RF-02'],
+    ['a4','Explorar','RF-01/09'],['aorg','Ficha de asociación','RF-03'],['a5','Ficha de actividad','RF-04/05/08'],
+    ['a6','Inscripción','RF-06'],['a7','Confirmación','RF-07'],['a7e','⚠ Sin lugares (error)','RF-05']
+  ]},
+  {uc:'Caso de uso B', sub:'Mi perfil, comunidad y participación · RF-11 a RF-20', items:[
+    ['b1','Mi perfil','RF-11/14'],['b9','Agregar miembro','RF-11'],['b10','Editar/eliminar miembro','RF-11'],['b2','Historial','RF-11'],['b3','Compartir testimonio','RF-12'],
+    ['b4','Favoritos','RF-20'],['b5','Notificaciones','RF-16'],['b6','Proponer iniciativa','RF-17'],
+    ['b7','Reportar experiencia','RF-18'],['b8','Aviso de privacidad','RF-15']
+  ]}
+];
+
+const DATA_SCREENS = {
+  a4:['loading','data','empty','error'],
+  b2:['loading','data','empty','error'],
+  b4:['loading','data','empty','error'],
+  b5:['loading','data','empty','error']
+};
+const STATE_LABEL = {loading:'Cargando',data:'Con datos',empty:'Vacía',error:'Error'};
+
+function buildSidebar(){
+  let h = `<h1>Familias que Suman</h1><div class="sub">Prototipo · flujo de pantallas</div>`;
+  FLOW.forEach(block=>{
+    h += `<div class="uc-block"><div class="uc-title">${block.uc}<small>${block.sub}</small></div>`;
+    block.items.forEach(([id,label,rf],i)=>{
+      h += `<button class="screen-btn ${cur===id?'active':''}" onclick="nav('${id}')"><span class="num">${i+1}</span>${label}<span class="rf">${rf}</span></button>`;
+    });
+    h += `</div>`;
+  });
+  document.getElementById('sidebar').innerHTML = h;
+}
+
+function buildStateBar(){
+  const bar = document.getElementById('stateBar');
+  if(DATA_SCREENS[cur]){
+    bar.style.display='flex';
+    bar.innerHTML = DATA_SCREENS[cur].map(s=>`<button class="state-chip ${dataState===s?'active':''}" onclick="setDataState('${s}')">${STATE_LABEL[s]}</button>`).join('');
+  } else { bar.style.display='none'; }
+}
+
+function nav(id, opts){
+  cur = id;
+  if(DATA_SCREENS[id]) dataState='data';
+  render();
+  const labels = {}; FLOW.forEach(b=>b.items.forEach(([i,l])=>labels[i]=l));
+  flash(labels[id] || id);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function setDataState(s){ dataState=s; render(); }
+function goHermosillo(){
+  D.user.city='Hermosillo'; cur='a4'; dataState='empty'; render();
+  flash('Explorar'); window.scrollTo({top:0,behavior:'smooth'});
+}
+function flash(label){
+  const t=document.getElementById('toast'); document.getElementById('toastTxt').textContent = 'Navegando a: '+label;
+  t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),1000);
+}
+
+function topbar(title, back, actions=''){
+  return `<div class="topbar">${back?`<button class="iconbtn nav-el" title="Volver" onclick="nav('${back}')"><span class="material-symbols-outlined">arrow_back</span></button>`:''}<h2>${title}</h2>${actions}</div>`;
+}
+function bottomnav(active){
+  const items=[['a4','Explorar','explore'],['b4','Favoritos','favorite'],['b5','Notificaciones','notifications'],['b1','Perfil','person']];
+  return `<div class="bottomnav">${items.map(([id,label,ic])=>`<button class="navitem ${active===id?'active':''} nav-el" onclick="nav('${id}')"><span class="material-symbols-outlined">${ic}</span>${label}${id==='b5'&&active!=='b5'?'<span class="dot"></span>':''}</button>`).join('')}</div>`;
+}
+function skeletonCards(n){
+  let h='';
+  for(let i=0;i<n;i++) h+=`<div class="card"><div class="skel" style="height:110px;border-radius:0"></div><div class="card-body"><div class="skel" style="height:14px;width:70%;margin-bottom:8px"></div><div class="skel" style="height:11px;width:50%;margin-bottom:10px"></div><div class="skel" style="height:11px;width:40%"></div></div></div>`;
+  return h;
+}
+function emptyState(icon,title,msg,btnLabel,btnTarget){
+  return `<div class="empty-wrap"><span class="material-symbols-outlined">${icon}</span><h4>${title}</h4><p>${msg}</p>${btnLabel?`<button class="btn secondary nav-el" style="width:auto;padding:11px 20px;display:inline-flex" onclick="nav('${btnTarget}')">${btnLabel}</button>`:''}</div>`;
+}
+function errorFetch(retryFn){
+  return `<div class="error-wrap"><span class="material-symbols-outlined">wifi_off</span><h4>No pudimos cargar la información</h4><p>Revisa tu conexión a internet e intenta de nuevo.</p><button class="btn error" style="width:auto;padding:11px 20px;display:inline-flex" onclick="${retryFn}">Reintentar</button></div>`;
+}
+function actCard(a){
+  const badge = a.spots===0?`<span class="badge full"><span class="material-symbols-outlined" style="font-size:13px">block</span>Agotado</span>`
+    : a.spots<=3?`<span class="badge low"><span class="material-symbols-outlined" style="font-size:13px">bolt</span>Quedan ${a.spots} de ${a.total}</span>`
+    : `<span class="badge ok"><span class="material-symbols-outlined" style="font-size:13px">event_available</span>Quedan ${a.spots} de ${a.total}</span>`;
+  return `<div class="card nav-el" title="Va a: Ficha de actividad" onclick="nav('a5')">
+    <div class="thumb"><span class="material-symbols-outlined">volunteer_activism</span></div>
+    <div class="card-body">
+      <p class="card-title">${a.name}</p>
+      <p class="card-sub nav-el" title="Va a: Ficha de asociación" onclick="event.stopPropagation();nav('aorg')">${a.org} <span class="material-symbols-outlined" style="font-size:12px;vertical-align:-2px">chevron_right</span></p>
+      <div class="meta-row"><span class="material-symbols-outlined">calendar_today</span>${a.date}</div>
+      <div class="meta-row"><span class="material-symbols-outlined">location_on</span>${a.place}</div>
+      <div style="margin-top:8px">${badge}</div>
+    </div></div>`;
+}
+
+function campCard(c){
+  const pct = Math.round(c.progress/c.goal*100);
+  return `<div class="card"><div class="thumb"><span class="material-symbols-outlined">campaign</span></div>
+    <div class="card-body">
+      <p class="card-title">${c.name}</p>
+      <p class="card-sub">${c.org}</p>
+      <div class="progressbar"><span style="width:${pct}%"></span></div>
+      <div class="meta-row"><span class="material-symbols-outlined">inventory_2</span>${c.progress} de ${c.goal} piezas</div>
+      <div class="meta-row"><span class="material-symbols-outlined">event</span>${c.until}</div>
+    </div></div>`;
+}
+function projCard(p){
+  return `<div class="card"><div class="thumb"><span class="material-symbols-outlined">yard</span></div>
+    <div class="card-body">
+      <p class="card-title">${p.name}</p>
+      <p class="card-sub">${p.org}</p>
+      <span class="badge ok"><span class="material-symbols-outlined" style="font-size:13px">update</span>${p.status}</span>
+    </div></div>`;
+}
+
+const S = {};
+
+S.a1 = ()=>`
+${topbar('')}
+<div class="hero" style="border-radius:26px;margin:0 16px 6px">
+  <span class="material-symbols-outlined" style="font-size:30px">diversity_3</span>
+  <h1>Familias que Suman</h1>
+  <p>Conecta con asociaciones y actividades de voluntariado verificadas en Monterrey y Hermosillo.</p>
+</div>
+<div class="pill-photo" style="margin:18px 16px 0;height:170px"><span class="material-symbols-outlined" style="font-size:44px">family_restroom</span></div>
+<div style="padding:20px 16px 6px">
+  <button class="btn primary nav-el" title="Va a: Crear cuenta" onclick="nav('a2')"><span class="material-symbols-outlined">person_add</span>Crear cuenta</button>
+  <div style="height:10px"></div>
+  <button class="btn outline nav-el" title="Va a: Elegir ciudad" onclick="nav('a3')">Ya tengo cuenta</button>
+</div>
+<p style="text-align:center;font-size:11px;color:var(--on-surface-variant);padding:10px 30px">Al continuar aceptas nuestro <span class="link-el nav-el" style="font-size:11px" title="Va a: Aviso de privacidad" onclick="nav('b8')">aviso de privacidad</span>. Tus datos y los de tu familia están protegidos.</p>`;
+
+S.a2 = ()=>`
+${topbar('Crear cuenta','a1')}
+<div class="px" style="margin-bottom:6px">
+  <p style="font-size:12.5px;color:var(--on-surface-variant);margin-top:0">Tu cuenta se crea para ti, de forma individual. Podrás agregar a tu familia después, desde tu perfil.</p>
+</div>
+<div class="field"><label>Nombre completo</label><input value="Daniela Reyes"></div>
+<div class="field"><label>Nombre de usuario</label><input value="@dani_reyes"><p style="font-size:11px;color:var(--on-surface-variant);margin:5px 0 0">Así te identificarán en la app.</p></div>
+<div class="field"><label>Correo electrónico</label><input value="daniela.reyes@ejemplo.com"></div>
+<div class="field"><label>Fecha de nacimiento</label><input value="02 / 11 / 1990" placeholder="DD/MM/AAAA"></div>
+<div class="field"><label>Contraseña</label><input type="password" value="••••••••"></div>
+<h3 class="section-title" style="margin-top:6px">¿Qué te gustaría hacer? <span style="font-weight:400;color:var(--on-surface-variant);font-size:12px">(opcional)</span></h3>
+<div class="chiprow" style="flex-wrap:wrap">
+  <span class="chip active">Participar en actividades</span><span class="chip">Donar</span><span class="chip">Proponer iniciativas</span>
+</div>
+<p style="font-size:11px;color:var(--on-surface-variant);padding:6px 16px 0">Usamos esto para destacarte lo relevante en Explorar. Puedes cambiarlo cuando quieras desde tu perfil.</p>
+<div style="padding:18px 16px 6px">
+  <button class="btn primary nav-el" title="Va a: Elegir ciudad" onclick="nav('a3')">Crear cuenta</button>
+</div>`;
+
+S.a3 = ()=>`
+${topbar('¿En qué ciudad estás?','a2')}
+<p class="px" style="font-size:12.5px;color:var(--on-surface-variant)">Solo verás asociaciones y actividades de la ciudad que elijas. Puedes cambiarla cuando quieras.</p>
+<div class="card nav-el" title="Va a: Explorar" onclick="D.user.city='Monterrey';nav('a4')" style="display:flex;align-items:center;gap:12px;padding:14px">
+  <div class="thumb" style="width:52px;height:52px;border-radius:12px;flex:none;margin:0"><span class="material-symbols-outlined">location_city</span></div>
+  <div class="card-body" style="padding:0"><p class="card-title">Monterrey, N.L.</p><p class="card-sub">128 actividades activas</p></div>
+  <span class="material-symbols-outlined" style="margin-left:auto;color:var(--outline)">chevron_right</span>
+</div>
+<div class="card nav-el" title="Va a: Explorar" onclick="goHermosillo()" style="display:flex;align-items:center;gap:12px;padding:14px">
+  <div class="thumb" style="width:52px;height:52px;border-radius:12px;flex:none;margin:0"><span class="material-symbols-outlined">location_city</span></div>
+  <div class="card-body" style="padding:0"><p class="card-title">Hermosillo, Son.</p><p class="card-sub">34 actividades activas</p></div>
+  <span class="material-symbols-outlined" style="margin-left:auto;color:var(--outline)">chevron_right</span>
+</div>`;
+
+S.a4 = (ds)=>{
+  const CATS = ['Todas','Alimentación','Educación','Medio ambiente','Salud','Adultos mayores'];
+  const tabInfo = {
+    actividades:{label:'Actividades', items:D.activities.filter(a=>activeCategory==='Todas'||a.cat===activeCategory), render:actCard, emptyMsg: activeCategory==='Todas'?'Aún no hay actividades aquí':`Aún no hay actividades de ${activeCategory} aquí`},
+    campanas:{label:'Campañas', items:D.campaigns, render:campCard, emptyMsg:'Aún no hay campañas activas aquí'},
+    proyectos:{label:'Proyectos', items:D.projects, render:projCard, emptyMsg:'Aún no hay proyectos activos aquí'}
+  }[exploreTab];
+  let body='';
+  if(ds==='loading') body = skeletonCards(3);
+  else if(ds==='error') body = errorFetch("setDataState('data')");
+  else if(ds==='empty' || tabInfo.items.length===0) body = emptyState('search_off',tabInfo.emptyMsg,'Sé la primera familia en proponer una asociación, actividad o proyecto para '+D.user.city+'.','Proponer iniciativa','b6');
+  else body = tabInfo.items.map(tabInfo.render).join('');
+  return `
+  <div class="topbar"><h2>Explorar</h2>
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--primary)" class="nav-el" title="Va a: Elegir ciudad" onclick="nav('a3')"><span class="material-symbols-outlined" style="font-size:18px">location_on</span>${D.user.city}</div>
+  </div>
+  <div class="tabs">
+    <button class="tab ${exploreTab==='actividades'?'active':''}" onclick="setExploreTab('actividades')">Actividades</button>
+    <button class="tab ${exploreTab==='campanas'?'active':''}" onclick="setExploreTab('campanas')">Campañas</button>
+    <button class="tab ${exploreTab==='proyectos'?'active':''}" onclick="setExploreTab('proyectos')">Proyectos</button>
+  </div>
+  ${exploreTab==='actividades'?`<div class="chiprow">
+    ${CATS.map(cat=>`<span class="chip ${activeCategory===cat?'active':''}" onclick="setCategory('${cat}')" style="cursor:pointer">${cat}</span>`).join('')}
+  </div>`:''}
+  <div class="propose-card nav-el" title="Va a: Proponer iniciativa" onclick="nav('b6')">
+    <span class="material-symbols-outlined">campaign</span>
+    <div><b>¿Conoces una causa que no está aquí?</b><span>Propón una asociación, actividad o proyecto</span></div>
+    <span class="material-symbols-outlined" style="margin-left:auto">chevron_right</span>
+  </div>
+  <h3 class="section-title">${tabInfo.label} en ${D.user.city}</h3>
+  ${body}
+  ${bottomnav('a4')}`;
+};
+
+S.aorg = ()=>`
+${topbar('Ficha de asociación','a4')}
+<div class="pill-photo" style="margin:0 16px;height:130px"><span class="material-symbols-outlined" style="font-size:36px">park</span></div>
+<div class="px" style="margin-top:14px">
+  <h2 style="font-family:var(--headline);margin:0 0 2px">Reforestación NL</h2>
+  <p style="margin:0;color:var(--on-surface-variant);font-size:13px">Medio ambiente · Verificada por Familias que Suman</p>
+</div>
+<h3 class="section-title">¿Qué hace?</h3>
+<p class="px" style="font-size:13px;line-height:1.6;color:var(--on-surface-variant)">Reforestación NL restaura zonas verdes urbanas y periurbanas en el área metropolitana de Monterrey desde 2016. Organiza jornadas familiares de plantación, da seguimiento al crecimiento de los árboles y capacita a voluntarios en cuidado de especies nativas.</p>
+<h3 class="section-title">¿A quién ayuda?</h3>
+<p class="px" style="font-size:13px;line-height:1.6;color:var(--on-surface-variant)">A las comunidades cercanas a los parques que reforesta, mejorando la calidad del aire y las áreas verdes disponibles para las familias del área.</p>
+<h3 class="section-title">¿Qué necesita?</h3>
+<div class="chiprow" style="flex-wrap:wrap"><span class="chip">Voluntariado familiar</span><span class="chip">Herramientas de jardinería</span><span class="chip">Donativos para riego</span></div>
+<h3 class="section-title">Dónde está</h3>
+<div class="meta-row px" style="font-size:13px"><span class="material-symbols-outlined">location_on</span>Av. Alfonso Reyes 2612, Col. Regina, Monterrey, N.L.</div>
+<h3 class="section-title">Cómo contactarla</h3>
+<div style="display:flex;gap:10px;padding:0 16px 8px">
+  <button class="btn outline sm nav-el" title="Llamar"><span class="material-symbols-outlined" style="font-size:17px">call</span>Llamar</button>
+  <button class="btn outline sm nav-el" title="WhatsApp"><span class="material-symbols-outlined" style="font-size:17px">chat</span>WhatsApp</button>
+  <button class="btn outline sm nav-el" title="Correo"><span class="material-symbols-outlined" style="font-size:17px">mail</span>Correo</button>
+</div>
+<h3 class="section-title">Actividades activas</h3>
+${actCard(D.activities[1])}
+<div style="padding:14px 16px 90px">
+  <button class="btn primary nav-el" title="Va a: Ficha de actividad" onclick="nav('a5')">Ver actividad y apoyar</button>
+</div>`;
+
+S.a5 = ()=>{
+  const a = D.activities[1]; // reforestación, 2 de 20 lugares — usada para el flujo de error de cupo
+  return `
+  ${topbar('Ficha de actividad','a4')}
+  <div class="pill-photo" style="margin:0 16px;height:150px"><span class="material-symbols-outlined" style="font-size:40px">park</span></div>
+  <div class="px" style="margin-top:14px">
+    <span class="badge low"><span class="material-symbols-outlined" style="font-size:13px">bolt</span>Quedan ${a.spots} de ${a.total} lugares</span>
+    <h2 style="font-family:var(--headline);margin:8px 0 2px">${a.name}</h2>
+    <p class="nav-el" title="Va a: Ficha de asociación" onclick="nav('aorg')" style="margin:0;color:var(--primary);font-size:13px;font-weight:600">${a.org} · ${a.cat} <span class="material-symbols-outlined" style="font-size:13px;vertical-align:-2px">chevron_right</span></p>
+  </div>
+  <div class="divider"></div>
+  <div class="px">
+    <div class="meta-row" style="font-size:13px;margin-bottom:8px"><span class="material-symbols-outlined">calendar_today</span>${a.date}</div>
+    <div class="meta-row" style="font-size:13px;margin-bottom:8px"><span class="material-symbols-outlined">location_on</span>${a.place}</div>
+    <div class="meta-row" style="font-size:13px;margin-bottom:8px"><span class="material-symbols-outlined">child_care</span>${a.kids}</div>
+  </div>
+  <h3 class="section-title">¿Qué vamos a hacer?</h3>
+  <p class="px" style="font-size:13px;line-height:1.6;color:var(--on-surface-variant)">Plantaremos 150 árboles nativos junto con Reforestación NL en el sector norte del parque. Se entregan guantes, herramientas y agua. Ideal para ir en familia; los niños pueden ayudar a regar y etiquetar los árboles.</p>
+  <h3 class="section-title">Contacto directo</h3>
+  <div style="display:flex;gap:10px;padding:0 16px 6px">
+    <button class="btn outline sm nav-el" title="Llamar"><span class="material-symbols-outlined" style="font-size:17px">call</span>Llamar</button>
+    <button class="btn outline sm nav-el" title="WhatsApp"><span class="material-symbols-outlined" style="font-size:17px">chat</span>WhatsApp</button>
+    <button class="btn outline sm nav-el" title="Correo"><span class="material-symbols-outlined" style="font-size:17px">mail</span>Correo</button>
+  </div>
+  <div style="padding:18px 16px 90px">
+    <button class="btn primary nav-el" title="Va a: Inscripción" onclick="nav('a6')">Inscribirme</button>
+  </div>`;
+};
+
+S.a6 = ()=>`
+${topbar('Inscripción','a5')}
+<p class="px" style="font-size:12.5px;color:var(--on-surface-variant)">Reforestación Parque Fundidora · Dom 20 sep, 8:00 hrs</p>
+<h3 class="section-title">¿Quién asiste?</h3>
+<div class="checkrow"><input type="checkbox" checked><div><b style="font-size:13px">Daniela Reyes</b><div style="font-size:11px;color:var(--on-surface-variant)">Tú</div></div></div>
+${D.companions.map(c=>`<div class="checkrow"><input type="checkbox" checked><div><b style="font-size:13px">${c.name}</b><div style="font-size:11px;color:var(--on-surface-variant)">${c.rel} · ${c.age} años</div></div></div>`).join('')}
+<div class="px" style="margin:4px 0 10px">
+  <span class="link-el" onclick="newCompanion.show=!newCompanion.show; render()"><span class="material-symbols-outlined" style="font-size:17px">person_add</span>Agregar un acompañante nuevo</span>
+</div>
+${newCompanion.show?`
+<div class="field"><label>Nombre del acompañante</label><input value="Regina Reyes"></div>
+<div class="field"><label>Fecha de nacimiento</label><input value="09 / 06 / 2019" placeholder="DD/MM/AAAA"></div>
+<div class="field ${newCompanion.email?'':'err'}"><label>Correo del acompañante *</label><input id="compEmail" oninput="newCompanion.email=this.value" placeholder="Obligatorio: recibirá su confirmación de asistencia"><div class="errmsg"><span class="material-symbols-outlined" style="font-size:14px">error</span>Este campo es obligatorio para poder confirmarle su lugar</div></div>
+<p style="font-size:11px;color:var(--on-surface-variant);padding:0 16px 6px">Se guardará como contacto en tu perfil para tus próximas inscripciones.</p>
+`:''}
+<div style="padding:18px 16px 90px">
+  <button class="btn primary nav-el" onclick="submitInscripcion()">Confirmar inscripción</button>
+</div>`;
+
+function submitInscripcion(){
+  if(newCompanion.show && !newCompanion.email){
+    document.querySelectorAll('.field')[document.querySelectorAll('.field').length-1].classList.add('err');
+    return;
+  }
+  nav('a7e');
+}
+
+S.a7 = ()=>`
+${topbar('¡Listo!')}
+<div style="padding:30px 30px 10px;text-align:center">
+  <span class="material-symbols-outlined" style="font-size:52px;color:var(--secondary)">task_alt</span>
+  <h2 style="font-family:var(--headline);margin:12px 0 4px">Inscripción confirmada</h2>
+  <p style="font-size:13px;color:var(--on-surface-variant)">Reforestación Parque Fundidora · Dom 20 sep, 8:00–11:00 hrs · Parque Fundidora</p>
+</div>
+<div class="card" style="padding:14px">
+  <div class="card-body" style="padding:0">
+    <p style="font-size:12.5px;margin:0 0 6px"><b>Asisten:</b> Daniela Reyes, Mateo Reyes, Sofía Reyes</p>
+    <p style="font-size:12.5px;margin:0">Recibirán un correo de confirmación con el punto de encuentro.</p>
+  </div>
+</div>
+<div style="padding:16px 16px 6px">
+  <button class="btn secondary nav-el"><span class="material-symbols-outlined">event</span>Agregar a mi calendario</button>
+  <div style="height:10px"></div>
+  <button class="btn outline nav-el" title="Va a: Explorar" onclick="nav('a4')">Volver al inicio</button>
+</div>`;
+
+S.a7e = ()=>`
+${topbar('Inscripción','a6')}
+<div class="error-wrap" style="padding:40px 26px 10px">
+  <span class="material-symbols-outlined">event_busy</span>
+  <h4>No pudimos completar tu inscripción</h4>
+  <p>Mientras confirmábamos tu registro, otra familia tomó el último lugar de <b>Reforestación Parque Fundidora</b>. No te preocupes, tu información no se perdió.</p>
+</div>
+<div style="padding:0 16px">
+  <button class="btn primary nav-el" onclick="nav('a7wait')"><span class="material-symbols-outlined">hourglass_top</span>Unirme a la lista de espera</button>
+  <div style="height:10px"></div>
+  <button class="btn secondary nav-el" title="Va a: Explorar" onclick="ucFilterCat='Medio ambiente';nav('a4')">Ver actividades similares</button>
+  <div style="height:10px"></div>
+  <button class="btn outline nav-el" title="Va a: Explorar" onclick="nav('a4')">Volver al inicio</button>
+</div>`;
+
+S.a7wait = ()=>`
+${topbar('Lista de espera')}
+<div style="padding:40px 26px 10px;text-align:center">
+  <span class="material-symbols-outlined" style="font-size:52px;color:var(--primary)">hourglass_top</span>
+  <h2 style="font-family:var(--headline);margin:12px 0 4px">Estás en la lista de espera</h2>
+  <p style="font-size:13px;color:var(--on-surface-variant)">Te avisaremos por notificación en cuanto se libere un lugar en Reforestación Parque Fundidora. Tienes 2 horas para confirmar si se libera.</p>
+</div>
+<div style="padding:16px">
+  <button class="btn outline nav-el" title="Va a: Explorar" onclick="nav('a4')">Volver al inicio</button>
+</div>`;
+
+S.b1 = ()=>`
+<div class="hero" style="border-radius:0 0 26px 26px;display:flex;align-items:center;gap:14px">
+  <div class="avatar" style="width:56px;height:56px;font-size:18px;background:#fff;color:var(--primary)">${D.user.initials}</div>
+  <div><h1 style="font-size:18px;margin:0">${D.user.name}</h1><p>${D.user.username} · ${D.user.city}</p></div>
+  <button class="iconbtn nav-el" style="margin-left:auto;background:rgba(255,255,255,.2)" title="Va a: Notificaciones" onclick="nav('b5')"><span class="material-symbols-outlined" style="color:#fff">notifications</span></button>
+</div>
+<div class="propose-card nav-el" title="Va a: Proponer iniciativa" onclick="nav('b6')" style="margin-top:14px">
+  <span class="material-symbols-outlined">campaign</span>
+  <div><b>Proponer iniciativa</b><span>Sugiere una asociación, actividad o proyecto</span></div>
+  <span class="material-symbols-outlined" style="margin-left:auto">chevron_right</span>
+</div>
+<h3 class="section-title">Mi familia</h3>
+<div class="px" style="font-size:12.5px;color:var(--on-surface-variant);margin-bottom:8px">Tu cuenta es individual. Agrega a quien te acompaña seguido para inscribirlos más rápido.</div>
+${D.companions.map((c,i)=>`<div class="checkrow" style="border:none;background:var(--surface-container-low)"><div class="avatar">${c.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><div style="flex:1"><b style="font-size:13px">${c.name}</b><div style="font-size:11px;color:var(--on-surface-variant)">${c.rel} · nace ${c.dob}</div></div><button class="iconbtn nav-el" title="Editar o eliminar" onclick="editCompanion(${i})" style="width:30px;height:30px;background:var(--surface-container-high);flex:none"><span class="material-symbols-outlined" style="font-size:16px">edit</span></button></div>`).join('')}
+<div class="px"><span class="link-el nav-el" title="Va a: Agregar miembro" onclick="nav('b9')"><span class="material-symbols-outlined" style="font-size:17px">person_add</span>Agregar miembro de mi familia</span></div>
+
+<h3 class="section-title">Insignias</h3>
+<div class="chiprow"><span class="chip active">🌱 Primer voluntariado</span><span class="chip active">🍽️ 3 apoyos a Alimentación</span><span class="chip">🏅 5 actividades</span></div>
+
+<h3 class="section-title">Fotos de mis experiencias</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 16px">
+  <div class="pill-photo" style="height:76px"><span class="material-symbols-outlined">image</span></div>
+  <div class="pill-photo" style="height:76px"><span class="material-symbols-outlined">image</span></div>
+  <div class="pill-photo nav-el" style="height:76px" title="Va a: Historial" onclick="nav('b2')"><span class="material-symbols-outlined">add_photo_alternate</span></div>
+</div>
+
+<div class="px" style="margin-top:16px">
+  <div class="checkrow nav-el" title="Va a: Historial" onclick="nav('b2')"><span class="material-symbols-outlined">history</span><b style="font-size:13px">Historial de participación</b><span class="material-symbols-outlined" style="margin-left:auto;color:var(--outline)">chevron_right</span></div>
+  <div class="checkrow nav-el" title="Va a: Favoritos" onclick="nav('b4')"><span class="material-symbols-outlined">favorite</span><b style="font-size:13px">Asociaciones favoritas</b><span class="material-symbols-outlined" style="margin-left:auto;color:var(--outline)">chevron_right</span></div>
+  <div class="checkrow nav-el" title="Va a: Reportar experiencia" onclick="nav('b7')"><span class="material-symbols-outlined">flag</span><b style="font-size:13px">Reportar una mala experiencia</b><span class="material-symbols-outlined" style="margin-left:auto;color:var(--outline)">chevron_right</span></div>
+  <a class="checkrow" href="https://familiasquesuman.com" target="_blank" rel="noopener" onclick="flash('Abriendo familiasquesuman.com…')" style="text-decoration:none;color:inherit"><span class="material-symbols-outlined">public</span><b style="font-size:13px">Visitar familiasquesuman.com</b><span class="material-symbols-outlined" style="margin-left:auto;color:var(--outline)">open_in_new</span></a>
+  <div class="checkrow nav-el" title="Va a: Aviso de privacidad" onclick="nav('b8')"><span class="material-symbols-outlined">privacy_tip</span><b style="font-size:13px">Aviso de privacidad</b><span class="material-symbols-outlined" style="margin-left:auto;color:var(--outline)">chevron_right</span></div>
+</div>
+${bottomnav('b1')}`;
+
+S.b2 = (ds)=>{
+  let body='';
+  if(ds==='loading') body = skeletonCards(2);
+  else if(ds==='error') body = errorFetch("setDataState('data')");
+  else if(ds==='empty') body = emptyState('history_toggle_off','Aún no has participado en ninguna actividad','Cuando te inscribas y asistas a una actividad, aparecerá aquí tu historial.','Explorar actividades','a4');
+  else body = D.history.map(h=>`<div class="card"><div class="card-body">
+      <p class="card-title">${h.name}</p><p class="card-sub">${h.org} · ${h.date}</p>
+      ${h.testimonial?`<span class="badge ok"><span class="material-symbols-outlined" style="font-size:13px">check</span>Testimonio compartido</span>`
+      :`<button class="btn secondary sm nav-el" title="Va a: Compartir testimonio" onclick="nav('b3')"><span class="material-symbols-outlined" style="font-size:16px">add_a_photo</span>Compartir mi experiencia</button>`}
+    </div></div>`).join('');
+  return `${topbar('Mi historial','b1')}${body}${bottomnav('b1')}`;
+};
+
+S.b3 = ()=>`
+${topbar('Compartir experiencia','b2')}
+<p class="px" style="font-size:12.5px;color:var(--on-surface-variant)">Clasificación de despensas · Banco de Alimentos de Monterrey · 15 ago 2026</p>
+<div class="px"><div class="pill-photo nav-el" style="height:150px" title="Agregar foto"><span class="material-symbols-outlined" style="font-size:34px">add_a_photo</span></div></div>
+<div class="field"><label>Cuéntanos cómo te fue</label><textarea rows="4">Fue una mañana increíble: mi hijo Mateo ayudó a empacar más de 40 despensas. ¡Repetimos seguro!</textarea></div>
+<div class="px" style="font-size:11.5px;color:var(--on-surface-variant);display:flex;gap:6px;align-items:flex-start"><span class="material-symbols-outlined" style="font-size:16px">visibility</span>Tu testimonio y foto pasan por revisión de Familias que Suman antes de publicarse.</div>
+<div style="padding:18px 16px 90px">
+  <button class="btn primary nav-el" onclick="nav('b3ok')">Enviar testimonio</button>
+</div>`;
+
+S.b3ok = ()=>`
+${topbar('Compartir experiencia')}
+<div style="padding:40px 26px 10px;text-align:center">
+  <span class="material-symbols-outlined" style="font-size:52px;color:var(--tertiary)">hourglass_top</span>
+  <h2 style="font-family:var(--headline);margin:12px 0 4px">Pendiente de revisión</h2>
+  <p style="font-size:13px;color:var(--on-surface-variant)">Gracias, Daniela. Tu testimonio se publicará en tu perfil en cuanto el equipo de Familias que Suman lo apruebe.</p>
+</div>
+<div style="padding:16px"><button class="btn outline nav-el" title="Va a: Mi perfil" onclick="nav('b1')">Volver a mi perfil</button></div>`;
+
+S.b4 = (ds)=>{
+  let body='';
+  if(ds==='loading') body = skeletonCards(2);
+  else if(ds==='error') body = errorFetch("setDataState('data')");
+  else if(ds==='empty') body = emptyState('favorite_border','No tienes asociaciones favoritas','Guarda las que te interesen para encontrarlas rápido y activar sus avisos.','Explorar asociaciones','a4');
+  else body = D.favorites.map(f=>`<div class="card"><div class="card-body" style="display:flex;align-items:center;gap:10px">
+      <div class="thumb" style="width:44px;height:44px;border-radius:10px;margin:0;flex:none"><span class="material-symbols-outlined" style="font-size:20px">apartment</span></div>
+      <div style="flex:1"><p class="card-title" style="margin:0">${f.name}</p><p class="card-sub" style="margin:0">${f.cat}</p></div>
+      <span class="material-symbols-outlined" style="color:${f.notif?'var(--primary)':'var(--outline)'}">${f.notif?'notifications_active':'notifications_off'}</span>
+    </div></div>`).join('');
+  return `${topbar('Favoritas','b1')}${body}${bottomnav('b4')}`;
+};
+
+S.b5 = (ds)=>{
+  let body='';
+  if(ds==='loading') body = Array(3).fill('<div class="notif-row"><div class="skel" style="width:34px;height:34px;border-radius:50%"></div><div style="flex:1"><div class="skel" style="height:10px;width:40%;margin-bottom:8px"></div><div class="skel" style="height:12px;width:85%"></div></div></div>').join('');
+  else if(ds==='error') body = errorFetch("setDataState('data')");
+  else if(ds==='empty') body = emptyState('notifications_none','No tienes notificaciones nuevas','Te avisaremos aquí de alertas, recordatorios y sugerencias.',null,null);
+  else body = D.notifications.map(n=>`<div class="notif-row"><div class="ic"><span class="material-symbols-outlined">${n.icon}</span></div><div><span class="small-tag">${n.kind} · ${n.time}</span><p style="margin:2px 0 0;font-size:13px">${n.text}</p></div></div>`).join('');
+  return `${topbar('Notificaciones','b1')}${body}${bottomnav('b5')}`;
+};
+
+S.b6 = ()=>`
+${topbar('Proponer iniciativa','b1')}
+<p class="px" style="font-size:12.5px;color:var(--on-surface-variant)">Cuéntanos qué te gustaría ver en Familias que Suman. El equipo la revisará y te avisará por notificación.</p>
+<div class="field"><label>Tipo de propuesta</label><select><option>Asociación nueva</option><option>Actividad</option><option>Proyecto</option></select></div>
+<div class="field"><label>Nombre</label><input placeholder="Ej. Perreras del Norte A.C."></div>
+<div class="field"><label>Ciudad</label><select><option>Monterrey, N.L.</option><option>Hermosillo, Son.</option></select></div>
+<div class="field"><label>Descripción</label><textarea rows="3" placeholder="¿Qué hacen y por qué debería estar en la app?"></textarea></div>
+<div class="field"><label>Tu contacto</label><input value="daniela.reyes@ejemplo.com"></div>
+<div style="padding:6px 16px 90px"><button class="btn primary nav-el" title="Va a: Mi perfil" onclick="nav('b1')">Enviar propuesta</button></div>`;
+
+S.b7 = ()=>`
+${topbar('Reportar experiencia','b1')}
+<div class="field"><label>Actividad o asociación</label><select><option>Clasificación de despensas — Banco de Alimentos</option><option>Reforestación Parque Fundidora — Reforestación NL</option></select></div>
+<div class="field"><label>¿Qué pasó?</label>
+${D.reportReasons.map((r,i)=>`<div class="checkrow" style="margin:0 0 8px"><input type="radio" name="reason" ${i===0?'checked':''}><span style="font-size:13px">${r}</span></div>`).join('')}
+</div>
+<div class="field"><label>Cuéntanos más</label><textarea rows="3" placeholder="Describe lo que ocurrió, con la mayor claridad posible"></textarea></div>
+<p class="px" style="font-size:11.5px;color:var(--on-surface-variant)">Tu reporte es confidencial. Familias que Suman lo revisará en un máximo de 5 días hábiles.</p>
+<div style="padding:6px 16px 90px"><button class="btn error nav-el" onclick="nav('b7ok')">Enviar reporte</button></div>`;
+
+S.b7ok = ()=>`
+${topbar('Reportar experiencia')}
+<div style="padding:40px 26px 10px;text-align:center">
+  <span class="material-symbols-outlined" style="font-size:52px;color:var(--secondary)">shield</span>
+  <h2 style="font-family:var(--headline);margin:12px 0 4px">Reporte enviado</h2>
+  <p style="font-size:13px;color:var(--on-surface-variant)">Folio #RF18-00842. Te contactaremos por correo si necesitamos más información.</p>
+</div>
+<div style="padding:16px"><button class="btn outline nav-el" title="Va a: Mi perfil" onclick="nav('b1')">Volver a mi perfil</button></div>`;
+
+S.b9 = ()=>`
+${topbar('Agregar miembro de familia','b1')}
+<p class="px" style="font-size:12.5px;color:var(--on-surface-variant)">Tu cuenta sigue siendo individual; esta persona queda guardada como acompañante para tus próximas inscripciones.</p>
+<div class="field"><label>Nombre completo</label><input value="Regina Reyes"></div>
+<div class="field"><label>Relación</label><select><option>Hijo/a</option><option>Pareja</option><option>Otro familiar</option></select></div>
+<div class="field"><label>Fecha de nacimiento</label><input value="09 / 06 / 2019" placeholder="DD/MM/AAAA"></div>
+<div class="field ${newFamilyMember.email?'':'err'}"><label>Correo de la persona *</label><input id="famEmail" oninput="newFamilyMember.email=this.value" placeholder="Obligatorio: recibirá su confirmación de asistencia"><div class="errmsg"><span class="material-symbols-outlined" style="font-size:14px">error</span>Este campo es obligatorio para poder confirmarle su lugar</div></div>
+<div style="padding:18px 16px 90px">
+  <button class="btn primary nav-el" onclick="submitFamilyMember()">Guardar miembro</button>
+</div>`;
+
+function submitFamilyMember(){
+  if(!newFamilyMember.email){
+    document.querySelectorAll('.field')[document.querySelectorAll('.field').length-1].classList.add('err');
+    return;
+  }
+  D.companions.push({name:'Regina Reyes', rel:'Hijo/a', dob:'09/06/2019', age:7});
+  newFamilyMember = {email:''};
+  nav('b1');
+  flash('Regina Reyes agregada a tu familia');
+}
+
+S.b10 = ()=>{
+  if(editingIndex===null) editingIndex=0;
+  const c = D.companions[editingIndex];
+  if(!c) return `${topbar('Editar miembro','b1')}<div class="empty-wrap"><span class="material-symbols-outlined">group_off</span><h4>No tienes miembros guardados</h4><p>Agrega uno primero desde tu perfil.</p></div>`;
+  return `
+${topbar('Editar miembro','b1')}
+<div class="field"><label>Nombre completo</label><input value="${c.name}"></div>
+<div class="field"><label>Relación</label><select><option ${c.rel==='Hijo/a'?'selected':''}>Hijo/a</option><option ${c.rel==='Pareja'?'selected':''}>Pareja</option><option ${c.rel==='Otro familiar'?'selected':''}>Otro familiar</option></select></div>
+<div class="field"><label>Fecha de nacimiento</label><input value="${c.dob}" placeholder="DD/MM/AAAA"></div>
+<div class="field"><label>Correo</label><input value="${c.email||''}"></div>
+<div style="padding:6px 16px 14px">
+  <button class="btn primary nav-el" title="Va a: Mi perfil" onclick="flash('Cambios guardados');nav('b1')">Guardar cambios</button>
+</div>
+<div class="divider"></div>
+${confirmDeleteMember?`
+<div class="px" style="background:var(--error-container);border-radius:12px;margin:14px 16px;padding:14px">
+  <p style="font-size:12.5px;color:var(--on-error-container);margin:0 0 10px"><b>¿Eliminar a ${c.name} de tu familia?</b><br>Ya no podrás inscribirla desde acompañantes guardados.</p>
+  <div style="display:flex;gap:8px">
+    <button class="btn error sm" style="flex:1" onclick="deleteCompanion()">Sí, eliminar</button>
+    <button class="btn outline sm" style="flex:1" onclick="confirmDeleteMember=false;render()">Cancelar</button>
+  </div>
+</div>`:`
+<div style="padding:0 16px 90px">
+  <button class="btn outline nav-el" style="color:var(--error);border-color:var(--error-container)" onclick="confirmDeleteMember=true;render()"><span class="material-symbols-outlined">person_remove</span>Eliminar miembro</button>
+</div>`}`;
+};
+
+function deleteCompanion(){
+  const name = D.companions[editingIndex].name;
+  D.companions.splice(editingIndex,1);
+  editingIndex = null; confirmDeleteMember = false;
+  nav('b1');
+  flash(name+' eliminada de tu familia');
+}
+
+S.b8 = ()=>`
+${topbar('Aviso de privacidad','b1')}
+<p class="px" style="font-size:13px;line-height:1.6;color:var(--on-surface-variant)">En Familias que Suman recopilamos el nombre, correo, fecha de nacimiento y ciudad de quien crea la cuenta, y el nombre, fecha de nacimiento y correo de los acompañantes que se agreguen, únicamente para confirmar su lugar en las actividades e informar a las asociaciones a quién esperar.</p>
+<h3 class="section-title">¿Para qué usamos tus datos?</h3>
+<ul class="px" style="font-size:12.5px;line-height:1.8;color:var(--on-surface-variant);margin:0">
+  <li>Confirmar inscripciones y avisar cambios de última hora</li>
+  <li>Mostrar actividades y asociaciones de tu ciudad</li>
+  <li>Enviar notificaciones que tú elijas recibir</li>
+</ul>
+<h3 class="section-title">Tus datos y los de tu familia</h3>
+<p class="px" style="font-size:13px;line-height:1.6;color:var(--on-surface-variant)">No vendemos ni compartimos tu información con terceros ajenos a la actividad en la que te inscribes. Puedes solicitar la eliminación de tus datos y los de tus acompañantes en cualquier momento.</p>
+<div style="padding:14px 16px 90px">
+  <button class="btn outline nav-el" title="Solicitar eliminación de datos"><span class="material-symbols-outlined">delete_outline</span>Solicitar eliminación de mis datos</button>
+</div>`;
+
+function render(){
+  const wrap = document.createElement('div');
+  wrap.innerHTML = S[cur](dataState);
+  const navEl = wrap.querySelector('.bottomnav');
+  if(navEl) navEl.remove();
+  const root = document.getElementById('screenRoot');
+  root.innerHTML = '';
+  const pc = document.createElement('div');
+  pc.className = 'page-content';
+  pc.innerHTML = wrap.innerHTML;
+  root.appendChild(pc);
+  if(navEl) root.appendChild(navEl);
+  buildSidebar();
+  buildStateBar();
+  document.getElementById('caption').innerHTML = CAPTIONS[cur] || '';
+}
+const CAPTIONS = {
+  a1:'<b>Bienvenida</b> — punto de entrada del recorrido de inscripción.',
+  a2:'<b>Crear cuenta</b> — cuenta individual por defecto, fecha de nacimiento y preferencias opcionales (RF-19).',
+  a3:'<b>Elegir ciudad</b> — filtra todo el contenido siguiente (RF-02).',
+  a4:'<b>Explorar</b> — separado en Actividades / Campañas / Proyectos, con "Proponer" destacado. Prueba los 4 estados arriba. Desde "Elegir ciudad" → Hermosillo verás el estado vacío real.',
+  aorg:'<b>Ficha de asociación</b> — qué hace, a quién ayuda, qué necesita, dónde está y cómo contactarla, sin salir de la app (RF-03).',
+  a5:'<b>Ficha de actividad</b> — cupo en tiempo real y contacto directo (RF-04, RF-05, RF-08).',
+  a6:'<b>Inscripción</b> — acompañantes guardados + correo obligatorio para acompañantes nuevos (RF-06).',
+  a7:'<b>Confirmación</b> — con acceso a agregar al calendario (RF-07).',
+  a7e:'<b>Caso de error diseñado</b> — el cupo se agota justo al confirmar; dos salidas claras.',
+  a7wait:'Salida del error: lista de espera activa.',
+  b1:'<b>Mi perfil</b> — familia, insignias, fotos de experiencias y accesos (RF-11, RF-14).',
+  b9:'<b>Agregar miembro de familia</b> — el correo es obligatorio, igual que al agregar acompañantes en una inscripción.',
+  b10:'<b>Editar / eliminar miembro</b> — la eliminación pide confirmación antes de borrar.',
+  b2:'<b>Historial</b> — prueba los 4 estados arriba.',
+  b3:'<b>Testimonio</b> — pasa por revisión antes de publicarse (RF-12).',
+  b4:'<b>Favoritos</b> — con notificaciones por asociación (RF-20).',
+  b5:'<b>Notificaciones</b> — alertas, recordatorios y sugerencias (RF-16).',
+  b6:'<b>Proponer iniciativa</b> (RF-17).',
+  b7:'<b>Reportar mala experiencia</b> (RF-18).',
+  b8:'<b>Aviso de privacidad</b> — accesible desde la bienvenida y desde el perfil (RF-15).'
+};
+render();
+</script>
+</body>
+</html>
